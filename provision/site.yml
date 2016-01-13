@@ -1,0 +1,59 @@
+---
+- name: Install Packages
+  hosts: all
+
+  vars:
+    simp_le_repo: https://github.com/kuba/simp_le
+    simp_le_package: https://github.com/kuba/simp_le/archive/master.zip
+    simp_le_home: /opt/simp_le
+    simp_le_virtualenv: /opt/simp_le/python
+    simp_le_python: /opt/simp_le/python/bin/python
+    simp_le_pip: /opt/simp_le/python/bin/pip
+    simp_le_bin: /opt/simp_le/python/bin/simp_le
+    requirements: [libffi, python]
+
+    fpm_binary: /usr/local/bin/fpm
+
+  tasks:
+  - name: Install build requisites packages
+    yum: name={{item}} state=present
+    when: ansible_distribution == 'CentOS'
+    with_items:
+    - python
+    - git
+    - python-virtualenv
+    - rubygems
+    - gcc
+    - python-devel
+    - libffi-devel
+    - openssl-devel
+    - ruby-devel
+    - rpm-build
+
+  - name: Create simp_le user
+    user: name=simp_le state=present home={{simp_le_home}}
+
+  - name: Create virtualenv
+    become_user: simp_le
+    shell: virtualenv {{simp_le_virtualenv}} --prompt="(simp_le)" creates={{simp_le_pip}}
+
+  - name: Update virtualenv
+    become_user: simp_le
+    shell: "{{simp_le_pip}} install {{item}} --upgrade"
+    with_items:
+       - setuptools
+       - mock
+       - funcsigs
+
+  - name: Compile simp_le
+    become_user: simp_le
+    shell: "{{simp_le_pip}} install {{simp_le_package}} creates={{simp_le_bin}}"
+
+  - name: Symlink simp_le
+    file: src={{simp_le_bin}} dest=/usr/bin/simp_le state=link
+
+  - name: Install fpm
+    shell: "gem install fpm creates={{fpm_binary}}"
+
+  - name: Package FPM
+    shell: "chdir=/vagrant_data {{fpm_binary}} -s dir -t rpm -n simp_le -v 00 {% for r in requirements %}-d {{r}} {%endfor%} {{simp_le_virtualenv}} /usr/bin/simp_le"

@@ -1,0 +1,2 @@
+this directory is empty now. 
+It will receive .RPM file
