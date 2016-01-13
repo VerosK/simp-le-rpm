@@ -1,5 +1,5 @@
 ---
-- name: Install Packages
+- name: Package simp_le to RPM
   hosts: all
 
   vars:
@@ -55,5 +55,5 @@
   - name: Install fpm
     shell: "gem install fpm creates={{fpm_binary}}"
 
-  - name: Package FPM
+  - name: Package to RPM with fpm
     shell: "chdir=/vagrant_data {{fpm_binary}} -s dir -t rpm -n simp_le -v 00 {% for r in requirements %}-d {{r}} {%endfor%} {{simp_le_virtualenv}} /usr/bin/simp_le"
